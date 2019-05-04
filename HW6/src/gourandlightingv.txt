@@ -1,0 +1,46 @@
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aNormal;    // 片段法向量
+
+// 传入片段着色器的计算好的颜色
+out vec3 LightingColor;
+
+uniform vec3 lightPos;
+uniform vec3 viewPos;
+uniform vec3 lightColor;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+// 环境光照强度
+uniform float ambientStrength;
+// 镜面光照强度
+uniform float specularStrength;
+// 反光度
+uniform int shininess;
+void main()
+{
+    gl_Position = projection * view * model * vec4(aPos, 1.0);   
+    
+    // gouraud shading
+    vec3 Position = vec3(model * vec4(aPos, 1.0));                
+    vec3 Normal = mat3(transpose(inverse(model))) * aNormal;   // 与法线矩阵相乘
+    
+    //  环境光照
+    vec3 ambient = ambientStrength * lightColor;
+  	
+    // 漫反射光照
+    vec3 norm = normalize(Normal);
+    vec3 lightDir = normalize(lightPos - Position);          // 光源的方向向量
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = diff * lightColor;
+    
+    // 镜面光照
+    vec3 viewDir = normalize(viewPos - Position);          // 视角向量
+    vec3 reflectDir = reflect(-lightDir, norm);            // 反射向量
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    vec3 specular = specularStrength * spec * lightColor;      
+
+    LightingColor = ambient + diffuse + specular;
+}
